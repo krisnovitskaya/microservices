@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: product-ms
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=ms
+    username: postgres
+    password: 32167
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+        jdbc.lob.non_contextual_creation: true
+server:
+  port: 7777
+eureka:
+  client:
+    serviceUrl.defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    instance.preferIpAddress: true
