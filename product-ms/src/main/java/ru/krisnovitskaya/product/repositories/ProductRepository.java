@@ -9,13 +9,9 @@ import ru.krisnovitskaya.product.entities.Product;
 
 import java.util.List;
 
+
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-
-//    @Query("SELECT p FROM Product p WHERE p.id IN :ids")
-//    List<Product> findAllByListId(List<Long> ids);
-
-
 
     @Query(value = "select * from products where id in :ids", nativeQuery = true)
     List<Product> findAllByListId(@Param("ids") List<Long> ids);

@@ -2,6 +2,7 @@ package ru.krisnovitskaya.product.controllers;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,6 +13,7 @@ import ru.krisnovitskaya.product.services.ProductService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,8 +22,9 @@ public class ProductController {
 
 
     @PostMapping("/getproducts")
-    public List<ProductDto> getProducts(@RequestBody List<Long> ids){
-        List<ProductDto> pdto = new ArrayList<>();
+    public ArrayList<ProductDto> getProducts(HttpEntity<List<Long>> longs){
+        List<Long> ids = longs.getBody();
+        ArrayList<ProductDto> pdto = new ArrayList<>();
         List<Product> products = productService.findAllByListId(ids);
         for (Product product : products) {
             ProductDto productDto = new ProductDto();
@@ -29,16 +32,8 @@ public class ProductController {
             productDto.setTitle(product.getTitle());
             productDto.setPrice(product.getPrice());
             pdto.add(productDto);
-            System.out.println(productDto);
         }
-        System.out.println(pdto.getClass());
         return pdto;
     }
 
-//    @PostMapping("/getbyids")
-//    public List<ProductDto> getProductsByListId(){
-//        productService.
-//
-//        return "oK";
-//    }
 }

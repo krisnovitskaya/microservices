@@ -10,7 +10,4 @@ public class ProductDto {
     private long id;
     private String title;
     private int price;
-
-
-
 }

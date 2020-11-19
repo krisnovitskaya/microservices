@@ -3,6 +3,10 @@ package ru.krisnovitskaya.order.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -27,47 +31,64 @@ public class OrderController {
 
 
     @PostMapping("/makeorder")
-    public List<String> makeOrder(@RequestBody List<Long> ids){
-
-        List<String> strings = new ArrayList<>();
-
-        //List<ProductDto> dtos = (List<ProductDto>)restTemplate.postForObject("http://product-ms/getproducts",ids, ResponseEntity.class);
-        List<ProductDto> dtos = (List<ProductDto>)restTemplate.postForObject("http://product-ms/getproducts",ids, Object.class);
-        //String dtos = restTemplate.postForObject("http://product-ms/getproducts",ids, String.class);
-        //String dtos = restTemplate.getForObject("http://product-ms/get",String.class);
-
-        for (Long id : ids) {
-            strings.add(String.valueOf(id));
+    public ResponseEntity newOrder(@RequestBody List<Long> ids) {
+        HttpEntity<List<Long>> longs = new HttpEntity<>(new ArrayList<>(ids));
+        ResponseEntity<List<ProductDto>> response = restTemplate.exchange("http://product-ms/getproducts", HttpMethod.POST, longs, new ParameterizedTypeReference<List<ProductDto>>() {
+        });
+        List<ProductDto> dtos = response.getBody();
+        if (dtos.size() != ids.size()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Any id`s not found");
         }
-        strings.add(dtos.toString());
-        return strings;
+        int orderPrice = dtos.stream().mapToInt(ProductDto::getPrice).reduce(Integer::sum).getAsInt();
+        Order order = new Order();
+        order.setItems(ids);
+        order.setPrice(orderPrice);
+        long id = orderService.save(order).getId();
+
+        return ResponseEntity.status(HttpStatus.OK).body("order created. id = " + id);
     }
 
     @GetMapping("/showorders")
-    public List<ProductDto> getOrders(){
+    public List<OrderDto> getOrders() {
         List<OrderDto> orderDtos = new ArrayList<>();
+        //получаем все ордеры
         List<Order> orders = orderService.findAll();
+        //собираем из ордеров уникальные встречающиеся айди продуктов
+        List<Long> ids = getUniqueIds(orders);
+
+        //получаем лист продуктовдто по уникальным айди
+        HttpEntity<List<Long>> longs = new HttpEntity<>(new ArrayList<>(ids));
+        ResponseEntity<List<ProductDto>> response = restTemplate.exchange("http://product-ms/getproducts", HttpMethod.POST, longs, new ParameterizedTypeReference<List<ProductDto>>() {
+        });
+        List<ProductDto> products = response.getBody();
+
+        return mapToOrderDto(orders, products);
+    }
+
+    private static List<OrderDto> mapToOrderDto(List<Order> orders, List<ProductDto> products) {
+        List<OrderDto> orderDtos = new ArrayList<>();
+        for (Order order : orders) {
+            OrderDto o = new OrderDto();
+            o.setId(order.getId());
+            o.setPrice(order.getPrice());
+            for (Long item : order.getItems()) {
+                for (ProductDto product : products) {
+                    if (item.equals(product.getId())) {
+                        o.getOrderItems().add(product);
+                    }
+                }
+            }
+            orderDtos.add(o);
+        }
+        return orderDtos;
+    }
+
+    private static List<Long> getUniqueIds(List<Order> orders) {
         Set<Long> unique = new HashSet<>();
         for (Order order : orders) {
             unique.addAll(order.getItems());
         }
-        List<Long> ids = new ArrayList<>();
-        for (Long id : unique) {
-            ids.add(id);
-        }
-        List<ProductDto> dtos = (ArrayList<ProductDto>) restTemplate.postForObject("http://product-ms/getproducts", ids, Object.class);
-        //Object dtos =  restTemplate.postForObject("http://product-ms/getproducts", ids, Object.class);
-//        for (ProductDto product : dtos) {
-//
-//        }
-
-        return dtos;
+        List<Long> ids = new ArrayList<>(unique);
+        return ids;
     }
 }
-
-//[
-//        12,
-//        121,
-//        12,
-//        1211
-//        ]
