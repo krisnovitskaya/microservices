@@ -5,6 +5,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>eureka-discovery-service</module>
+		<module>rabbit</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
